@@ -78,7 +78,7 @@ const HomeScreen = () => {
           return;
         }
 
-        const response = await fetch('http://192.168.1.25:5000/products/api/list', {
+        const response = await fetch('http://192.168.1.14:5000/products/api/list', {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -140,7 +140,7 @@ const HomeScreen = () => {
 
   const renderProductItem = ({ item }) => {
     // Lấy URL của hình ảnh đầu tiên trong mảng, hoặc null nếu mảng rỗng
-    const firstImageUrl = item.image && item.image.length > 0 ? item.image[0] : null;
+    const firstImageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
   
     return (
       <View style={styles.productItem}>
