@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const setting = () => {
+const notification = () => {
   return (
     <View>
       <Text>setting</Text>
@@ -9,6 +9,6 @@ const setting = () => {
   )
 }
 
-export default setting
+export default notification
 
 const styles = StyleSheet.create({})

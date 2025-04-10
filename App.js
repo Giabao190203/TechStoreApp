@@ -7,11 +7,16 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import LoginScreen from './screens/login';
-import RegisterScreen from './screens/register';
+import LoginScreen from './screens/Login';
+import RegisterScreen from './screens/Register';
+import ProfileScreen from './screens/Profile';
+import NotificationScreen from './screens/Notification';
+import AuthLoadingScreen from './screens/AuthLoading';
+import AccountSettingsScreen from './screens/AccountSetting';
+import ProductDetailScreen from './screens/Details';
 import HomeScreen from './screens/home';
-import ProfileScreen from './screens/profile';
-import SettingScreen from './screens/setting';
+
+
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -103,10 +108,10 @@ function BottomTabNavigator() {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Profile') {
+          } else if (route.name === 'Notification') {
+            iconName = focused ? 'notifications' : 'notifications-outline';
+          } else if (route.name === 'Person') {
             iconName = focused ? 'person' : 'person-outline';
-          } else if (route.name === 'Setting') {
-            iconName = focused ? 'settings' : 'settings-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={focused ? '#fff' : color} />;
@@ -129,8 +134,8 @@ function BottomTabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
-      <Tab.Screen name="Setting" component={SettingScreen} />
+      <Tab.Screen name="Notification" component={NotificationScreen} />
+      <Tab.Screen name="Person" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -138,10 +143,14 @@ function BottomTabNavigator() {
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName='AuthLoading' screenOptions={{ headerShown: false }}>
+        {/* AuthLoading Screen */}
+        <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Main" component={BottomTabNavigator} />
+        <Stack.Screen name="AccountSetting" component={AccountSettingsScreen} />
+        <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

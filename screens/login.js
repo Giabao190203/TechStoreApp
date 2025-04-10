@@ -99,30 +99,33 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://192.168.1.14:5000/users/login', {
+      const response = await fetch('http://192.168.1.17:5000/users/login', {
         method: 'POST',
         headers:{
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({email, password})
       });
-
+  
       const data = await response.json();
-
-      if(response.ok){
-        //đăng nhập thành công
-        Alert.alert('Thành công', 'Đăng nhập thành công')
-        await AsyncStorage.setItem('userDataa=', JSON.stringify(data));
-        navigation.navigate('Main');
-        console.log("data", data);
-      }else{
-        Alert.alert('Thất bại', 'Tài khoản hoặc mật khẩu không chính xác')
+  
+      if (response.ok) {
+        // data có thể là { token: "...", user: {...} }
+        if (data.token) {
+          await AsyncStorage.setItem('userDataa=', JSON.stringify(data));
+          Alert.alert('Thành công', 'Đăng nhập thành công');
+          navigation.replace('Main'); // replace để không quay lại màn login
+          console.log("Login data:", data);
+        } else {
+          Alert.alert('Lỗi', 'Phản hồi không chứa token!');
+        }
+      } else {
+        Alert.alert('Thất bại', data.message || 'Tài khoản hoặc mật khẩu không chính xác');
         console.log("Lỗi đăng nhập", data);
       }
     } catch (error) {
       console.error("Lỗi khi đăng nhập", error);
-      Alert.alert('Lỗi đăng nhập', 'Đã có lỗi xảy ra trong quá trình đăng nhập xin vui lòng thử lại.');
-      
+      Alert.alert('Lỗi đăng nhập', 'Đã có lỗi xảy ra trong quá trình đăng nhập. Vui lòng thử lại.');
     }
   };
 
