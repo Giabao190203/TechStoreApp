@@ -15,6 +15,7 @@ import AuthLoadingScreen from './screens/AuthLoading';
 import AccountSettingsScreen from './screens/AccountSetting';
 import ProductDetailScreen from './screens/Details';
 import HomeScreen from './screens/home';
+import CartScreen from './screens/Cart';
 
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -121,7 +122,7 @@ function BottomTabNavigator() {
         tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 20,
+          bottom: 10,
           left: 20,
           right: 20,
           elevation: 0,
@@ -151,6 +152,8 @@ export default function App() {
         <Stack.Screen name="Main" component={BottomTabNavigator} />
         <Stack.Screen name="AccountSetting" component={AccountSettingsScreen} />
         <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+        <Stack.Screen name="Cart" component={CartScreen} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

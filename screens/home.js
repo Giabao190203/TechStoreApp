@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { API_BASE_URL } from "../src/config";
 const { useNavigation } = require("@react-navigation/native");
 
 const { width, height } = Dimensions.get("window");
@@ -81,7 +82,7 @@ const HomeScreen = () => {
         }
 
         const response = await fetch(
-          "http://192.168.1.17:5000/products/api/list",
+          `${API_BASE_URL}/products/api/list`,
           {
             method: "GET",
             headers: {
@@ -231,9 +232,7 @@ const HomeScreen = () => {
           <TouchableOpacity
             style={styles.cartButton}
             onPress={() => {
-              // kiểm tra đăng nhập nếu cần, rồi chuyển trang giỏ hàng
-              Alert.alert("Chuyển đến giỏ hàng");
-              // navigation.navigate('Cart');
+              navigation.navigate('Cart');
             }}
           >
             <Ionicons name="cart-outline" size={24} color="#333" />

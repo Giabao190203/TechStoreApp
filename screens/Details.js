@@ -15,6 +15,9 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { API_BASE_URL } from "../src/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Toast from "react-native-toast-message";
 
 // --- Constants ---
 const COLORS = {
@@ -49,26 +52,46 @@ const SpecRow = ({ label, value }) => (
   </View>
 );
 
-// --- Màn hình chi tiết sản phẩm ---
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params;
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const flatListRef = useRef();
+  const [userId, setUserId] = useState(null); // State để lưu userId
+  const [token, setToken] = useState(null); // State để lưu token
 
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
   const DESCRIPTION_LINE_LIMIT = 10;
 
-  // --- Gọi API để lấy chi tiết sản phẩm ---
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const storedData = await AsyncStorage.getItem('userDataa=');
+        if(storedData){
+          const parsedData = JSON.parse(storedData);
+          setUserId(parsedData?.user?._id);
+          setToken(parsedData?.token);
+        }else{
+          console.log("Không có dữ liệu người dùng");
+          
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu người dùng:", error);
+      }
+    };
+    getUserData();
+  },[]);
+
+  //Gọi API chi tiết sản phẩm
   useEffect(() => {
     const fetchProductDetail = async () => {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://192.168.1.17:5000/products/api/details/${productId}`
+          `${API_BASE_URL}/products/api/details/${productId}`
         );
         const data = await response.json();
         if (response.ok) {
@@ -101,6 +124,72 @@ const ProductDetailScreen = ({ route, navigation }) => {
       currency: "VND",
     }).format(price);
   };
+
+  //thêm vào giỏ hàng
+  const handleAddToCart = async () => {
+    //kiểm tra login
+    if(!userId || !token){
+      Alert.alert('Lỗi', 'Vui lòng đăng nhập để tiếp tục',
+        [
+          {text: "Để sau"},
+          {text:"Đăng nhập", onPress: () => navigation.navigate('Login')}
+        ]
+      );
+      return;
+    }
+
+    //kiểm tra dữ liệu sp
+    if(!productData || !productData._id){
+      Alert.alert('Lỗi', 'Không tìm thấy sản phẩm');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      //gọi api
+      const response = await fetch(`${API_BASE_URL}/carts/api/add-items`,{
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: productData._id,
+          quantity: 1,//mặc định thêm 1 mỗi khi ấn nút
+        }),
+      });
+
+      const data = await response.json();
+      //xử lý kq
+      if(response.ok){
+        //BE trả về giỏ hàng đã cập nhật
+        console.log("Add to cart", data);
+        Alert.alert('Thành công', 'Thêm vào giỏ hàng thành công');
+      }else{
+        //xử lý token hết hạn
+        if(response.status === 401){
+          Alert.alert('Lỗi', 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+          await AsyncStorage.removeItem('userDataa=');
+          navigation.replace('Login')
+          return;
+        }
+        console.error("Add to cart error", data);
+        Alert.alert('Lỗi', data.message || data.error || 'Thêm vào giỏ hàng thất bại');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi', 'Không thể kết nối đến máy chủ');
+    } finally {
+      setLoading(false);
+    }
+
+  }
+
+  //xử lý mua hàng
+  const handleBuyNow = () => {
+    console.log(`Buy now`);
+  }
 
   const toggleDescriptionExplainion = () => {
     setIsDescriptionExpanded(!isDescriptionExpanded);
@@ -141,7 +230,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
     </View>
   );
 
-  // --- Loading ---
+  //Loading
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -150,7 +239,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
     );
   }
 
-  // --- Main render ---
+  //render giao diện chi tiết
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
@@ -210,7 +299,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           )}
         </View>
 
-        {/* Product Info */}
+        {/* thông tin sản phẩm */}
         <View style={styles.infoSection}>
           <Text style={styles.productName}>
             {productData.name || "Không có tên"}
@@ -220,7 +309,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           </Text>
         </View>
 
-        {/* Description */}
+        {/* mô tả */}
         <View style={styles.descriptionSection}>
           <Text style={styles.sectionTitle}>Mô tả sản phẩm</Text>
           <Text
@@ -243,7 +332,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           )}
         </View>
 
-        {/* Specifications */}
+        {/* Các thông số kỹ thuật */}
         <View style={styles.specsSection}>
           <Text style={styles.sectionTitle}>Thông số kỹ thuật</Text>
 
@@ -274,14 +363,10 @@ const ProductDetailScreen = ({ route, navigation }) => {
           {productData.max_charging && <SpecRow label="Công nghệ sạc" value={productData.max_charging} />}
           {/* Hệ điều hành */}
           {productData.operating_system && <SpecRow label="Hệ điều hành" value={productData.operating_system} />}
-
-          {/* Thêm các thông số khác nếu cần và kiểm tra tương tự */}
-
-          {/* (Tùy chọn) Hiển thị thông báo nếu không có thông số nào */}
           {/* Kiểm tra xem có ít nhất một thông số có giá trị không */}
           {!Object.values(productData).some(value =>
               value !== null && value !== undefined && value !== '' &&
-              ['screen', 'cpu', 'ram', 'storage', 'camera', 'pin', 'operating_system', /* thêm các key chính khác */].includes(Object.keys(productData).find(key => productData[key] === value)) // Chỉ kiểm tra các key quan trọng
+              ['screen', 'cpu', 'ram', 'storage', 'camera', 'pin', 'operating_system', 'gpu', 'screen_resolution', 'color_coverage', 'cpu_speed', 'max_speed', 'cores', 'threads', 'max_charging', 'ram_type', 'bus_ram', 'ram_max' ].includes(Object.keys(productData).find(key => productData[key] === value)) // Chỉ kiểm tra các key quan trọng
             ) && (
              <Text style={styles.noSpecsText}>Không có thông số kỹ thuật chi tiết.</Text>
             )}
@@ -290,23 +375,21 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.chatButton}>
-          <Ionicons
-            name="chatbubble-ellipses-outline"
-            size={24}
-            color={COLORS.primary}
-          />
-          <Text style={styles.bottomBarText}>Chat</Text>
-        </TouchableOpacity>
-        <View style={styles.separator} />
+        {/* Nút Thêm vào giỏ hàng */}
         <TouchableOpacity
           style={styles.addToCartButton}
-          onPress={() =>
-            Alert.alert("Chức năng", "Thêm vào giỏ hàng (chưa cài đặt)")
-          }
+          onPress={handleAddToCart}
         >
-          <Ionicons name="cart-outline" size={24} color={COLORS.white} />
-          <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
+          <Ionicons name="cart-outline" size={22} color={COLORS.primary} />
+          <Text style={styles.addToCartText}>Thêm vào giỏ</Text>
+        </TouchableOpacity>
+
+        {/* Nút Mua ngay */}
+        <TouchableOpacity
+          style={styles.buyNowButton}
+          onPress={handleBuyNow}
+        >
+          <Text style={styles.buyNowText}>Mua ngay</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -326,7 +409,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: COLORS.lightGray,
   },
-  // Header Styles (Tương tự AccountSetting)
+  // Header Styles
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -466,43 +549,41 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 70, // Chiều cao thanh bottom
+    height: 50,
     flexDirection: "row",
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    elevation: 8, // Shadow cho Android
-    shadowColor: "#000", // Shadow cho iOS
+    elevation: 8,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  chatButton: {
-    flex: 0.3, // Chiếm 30% chiều rộng
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  separator: {
-    width: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: SIZES.padding / 2,
-  },
   addToCartButton: {
-    flex: 0.7, // Chiếm 70% chiều rộng
-    backgroundColor: COLORS.primary,
+    flex: 0.5, // Chiếm 50%
+    backgroundColor: '#fff', // Nền trắng hoặc màu nhẹ
     justifyContent: "center",
     alignItems: "center",
-    flexDirection: "row",
-  },
-  bottomBarText: {
-    fontSize: SIZES.font - 2, // Chữ nhỏ hơn chút
-    color: COLORS.primary,
-    marginTop: 2,
+    flexDirection: "row", // Icon và text cùng hàng
+    borderRightWidth: 1, // Thêm đường kẻ giữa 2 nút
+    borderRightColor: COLORS.border,
   },
   addToCartText: {
-    fontSize: SIZES.h4,
+    fontSize: SIZES.font - 2, // Có thể giảm cỡ chữ
+    color: COLORS.primary, // Màu chữ trùng màu chính
+    fontWeight: "600",
+    marginLeft: SIZES.base / 2,
+  },
+  buyNowButton: {
+    flex: 0.5, // Chiếm 50%
+    backgroundColor: COLORS.primary, // Nền màu chính
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  buyNowText: {
+    fontSize: SIZES.h4 - 2,
     color: COLORS.white,
     fontWeight: "bold",
-    marginLeft: SIZES.base,
   },
 });
